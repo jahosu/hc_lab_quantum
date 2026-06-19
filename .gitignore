@@ -1,0 +1,85 @@
+# =========================
+# Python
+# =========================
+
+# Bytecode / Cache
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual Environment
+.venv/
+.quantvenv/
+venv/
+env/
+ENV/
+
+# =========================
+# Pytest / Testing
+# =========================
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+coverage.xml
+nosetests.xml
+
+# =========================
+# Qiskit
+# =========================
+
+# Simulator outputs / results
+*.qasm
+*.hdf5
+*.json
+
+# IBM Runtime / local cache
+.qiskit/
+qiskit_cache/
+qiskit_runtime/
+
+# Generated figures / plots
+*.png
+*.svg
+*.pdf
+
+
+
+# =========================
+# VS Code
+# =========================
+.vscode/
+*.code-workspace
+
+# =========================
+# Logs / Runtime
+# =========================
+*.log
+*.tmp
+
+# =========================
+# Environment / Secrets
+# =========================
+.env
+.env.*
+*.env
+
+# =========================
+# Build / Packaging
+# =========================
+build/
+dist/
+*.egg-info/
+.eggs/
+
+# =========================
+# Windows
+# =========================
+Thumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# =========================
+# Misc
+# =========================
+.cache/
