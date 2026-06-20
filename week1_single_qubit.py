@@ -11,7 +11,7 @@ from qiskit import QuantumCircuit, transpile
 from qiskit_aer import AerSimulator, AerError
 import matplotlib.pyplot as plt
 from pathlib import Path
-
+from qiskit.visualization import plot_histogram
 
 def get_simulator():
     return AerSimulator(method="statevector")
@@ -58,24 +58,38 @@ def run_and_plot(circuit, shots, title, save_path=None):
     qc_t = transpile(circuit, simulator)
     result = simulator.run(qc_t, shots=shots).result()
     counts = result.get_counts()
-    print(f"Counts of {title}: {counts}")
-    pass
+    print(f"\n{counts}")
+    
+    fig = plot_histogram(counts, title=title)
+
+    if save_path:
+        fig.savefig(save_path, bbox_inches="tight")
+
+    plt.close(fig)
+
+    return counts
 
 
 def main(shots=1000):
     """Run the single-qubit routines and persist plots under results/week1/."""
-    Path("results/week1").mkdir(parents=True, exist_ok=True)
+    output_dir = Path("results/week1/task2")
+    output_dir.mkdir(parents=True, exist_ok=True)
 
     # TODO:
     # Build the three circuits, run them via run_and_plot, and save the figures.
-    qc_zero = prepare_zero()
-    run_and_plot(qc_zero, shots, "Zero state")
+    circuits = [
+        ("|0>", prepare_zero(), output_dir / "zero_hist.png"),
+        ("|1>", prepare_one(), output_dir / "one_hist.png"),
+        ("|+>", prepare_plus(), output_dir / "plus_hist.png"),
+    ]
 
-    qc_one = prepare_one()
-    run_and_plot(qc_one, shots, "one state")
-
-    qc_plus = prepare_plus()
-    run_and_plot(qc_plus, shots, "plus state")
+    for title, qc, save_path in circuits:
+        run_and_plot(
+            qc,
+            shots,
+            title,
+            save_path
+        )
 
 if __name__ == "__main__":
     main()

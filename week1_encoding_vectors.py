@@ -40,17 +40,32 @@ def run_angle_encoding(xs, shots=1000):
     - Use the simulator to iterate over xs, execute the encoding, and report the observed p(1).
     """
     simulator = get_simulator()
+
+    print(f"{'x':<6} {'θ(rad)':<8} {'Theory p(1)':<12} {'Empirical p(1)':<15}")
+    print("-" * 45)
+
     for x in xs:
-        x_enc = build_angle_encoding_circuit(x)
-        qc_t = transpile(x_enc, simulator)
+        qc = build_angle_encoding_circuit(x)
 
-        # Get the exact statevector
-        state = Statevector.from_instruction(qc_t)
+        state = Statevector.from_instruction(qc)
 
-        # Get the probability of measuring 1
-        prob_1 = state.probabilities(qargs=[0])[1]
-        print(prob_1)
+        theory_p1 = state.probabilities()[1]
 
+        # Simulate measurements
+        qc.measure_all()
+        qc_t = transpile(qc, simulator)
+
+        result = simulator.run(qc_t, shots=shots).result()
+        counts = result.get_counts()
+
+        empirical_p1 = counts.get('1', 0) / shots
+
+        print(
+            f"{x:<6.2f} "
+            f"{x * math.pi:<8.3f} "
+            f"{theory_p1:<12.3f} "
+            f"{empirical_p1:<15.3f}"
+        )
 
 def build_amplitude_encoding_circuit(v0: float, v1: float):
     """

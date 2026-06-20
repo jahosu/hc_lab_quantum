@@ -12,7 +12,7 @@ from qiskit import QuantumCircuit, transpile
 from qiskit_aer import AerSimulator, AerError
 import matplotlib.pyplot as plt
 from pathlib import Path
-
+from qiskit.visualization import plot_histogram
 
 def get_simulator():
     return AerSimulator(method="statevector")
@@ -60,7 +60,18 @@ def run_and_plot_joint(circuit, shots, title, save_path=None):
     qc_t = transpile(circuit, simulator)
     result = simulator.run(qc_t, shots=shots).result()
     counts = result.get_counts()
-    print(f"Counts of {title}: {counts}")
+    
+    print(f"\n{title}")
+    print(counts)
+
+    fig = plot_histogram(counts, title=title)
+
+    if save_path:
+        fig.savefig(save_path, bbox_inches="tight")
+
+    plt.close(fig)
+
+    return counts
 
 
 def main(shots=2000):
@@ -68,19 +79,30 @@ def main(shots=2000):
     Run experiments for the four basis states (|00⟩, |01⟩, |10⟩, |11⟩) and the Bell state |Φ⁺⟩.
     Save joint histograms in results/week1/.
     """
-    Path("results/week1").mkdir(parents=True, exist_ok=True)
+    output_dir = Path("results/week1/task3")
+    output_dir.mkdir(parents=True, exist_ok=True)
 
     # TODO:
     # Iterate over the basis states, run them through the helper, and finally do the same for |Φ⁺⟩.
     states = ["00", "01", "10", "11"]
+    # Basis states
     for state in states:
         qc = prepare_basis_state(state)
-        run_and_plot_joint(qc, shots, f"Basis State |{state}>")
+        run_and_plot_joint(
+            qc,
+            shots,
+            f"Basis State |{state}>",
+            output_dir / f"basis_{state}.png"
+        )
 
-    for state in states:
-        qc = prepare_bell_phi_plus()
-        run_and_plot_joint(qc, shots, f"Bell phi plus State |{state}>")
-
+    # Bell state
+    qc = prepare_bell_phi_plus()
+    run_and_plot_joint(
+        qc,
+        shots,
+        "Bell State |Φ⁺>",
+        output_dir / "bell_phi_plus.png"
+    )
 
 if __name__ == "__main__":
     main()
