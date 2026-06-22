@@ -22,6 +22,8 @@ Counts: {'0': 10}
 
 {'1': 506, '0': 494}
 ```
+<img src="plus_diagram.png" alt="|+> result" width="400">
+
 ### Explanation
 Measurement frequencies approximate the theoretical probabilities predicted by quantum mechanics. The states |0⟩ and |1⟩ always produce outcomes 0 and 1 respectively, while |+⟩ produces 0 and 1 with approximately equal frequency. Small deviations from the expected probabilities occur because only a finite number of shots are measured.
 
@@ -43,6 +45,7 @@ Basis State |11>
 Bell State |Φ⁺>
 {'00': 993, '11': 1007}
 ```
+<img src="bell_state_diagram.png" alt="bell state result" width="400">
 
 ## Task4 - Angle Encoding
 ### Output:
