@@ -67,17 +67,22 @@ def build_noise_model(p1: float = 0.01, p2: float = 0.02, p3: float = 0.03) -> N
     """
 
 
-    # Depolarizing quantum errors
+def build_noise_model(p1=0.01, p2=0.02, p3=0.03):
     error_1 = depolarizing_error(p1, 1)
-    error_2 = depolarizing_error(p2, 1)
-    error_3 = depolarizing_error(p3, 1)
+    error_2 = depolarizing_error(p2, 2)
+    error_3 = depolarizing_error(p3, 3)
 
-    # Add errors to noise model
     noise_model = NoiseModel()
-    noise_model.add_all_qubit_quantum_error(error_1, ['u1'])
-    noise_model.add_all_qubit_quantum_error(error_2, ['u2'])
-    noise_model.add_all_qubit_quantum_error(error_3, ['u3'])
-    
+
+    # 1-qubit gates
+    noise_model.add_all_qubit_quantum_error(error_1, ["h", "x", "sx", "rz"])
+
+    # 2-qubit gates
+    noise_model.add_all_qubit_quantum_error(error_2, ["cx"])
+
+    # 3-qubit gate
+    noise_model.add_all_qubit_quantum_error(error_3, ["cswap"])
+
     return noise_model
 
 
@@ -103,19 +108,24 @@ def build_overlap_circuit_with_depth(vx, vy, depth_layers: int) -> QuantumCircui
     - Prepare both encodings, wrap the swap-test sequence, sprinkle the requested identity blocks, and finish with measurement.
     """
     qc = QuantumCircuit(3, 1)
+
     anc, qx, qy = 0, 1, 2
 
-    # TODO: fill in the described structure.
     prepare_vector_state(qc, qx, vx)
     prepare_vector_state(qc, qy, vy)
-    
+
+    # Add identity layers BEFORE the swap test
+    for _ in range(depth_layers):
+        _add_identity_layer(qc, [anc, qx, qy])
+
+    # Swap test
     qc.h(anc)
     qc.cswap(anc, qx, qy)
     qc.h(anc)
-    
-    qubits = [] if depth_layers == 0 else range(3, depth_layers+3) 
-    _add_identity_layer(qc, qubits)
-    qc.measure_all()
+
+    # Measure ancilla only
+    qc.measure(anc, 0)
+
     return qc
 
 
@@ -141,28 +151,80 @@ def run_study():
     # Build the noise model plus the ideal and noisy backends.
     rows = []
     noise_model = build_noise_model()
-    sim = get_backend(noise_model)
+
+    ideal_sim = get_backend()
+    noisy_sim = get_backend(noise_model)
     
     # TODO:
     # Loop over depths, generate the circuit, run both simulations with optimization_level=0,
     # store the overlap estimates, and print progress.
+    rows = []
+
     for depth in depths:
         qc = build_overlap_circuit_with_depth(vx, vy, depth)
-        qc_t = transpile(qc, sim, optimization_level=0, seed_transpiler=seed)
-        result = sim.run(qc_t, shots=shots, seed_simulator=seed).result()
-        counts = result.get_counts()
-        estimated_overlap_sq = estimate_overlap_from_counts(counts, shots)
-        rows.append(estimated_overlap_sq)
+
+        qc_ideal = transpile(
+            qc,
+            ideal_sim,
+            optimization_level=0,
+            seed_transpiler=seed
+        )
+
+        qc_noisy = transpile(
+            qc,
+            noisy_sim,
+            optimization_level=0,
+            seed_transpiler=seed
+        )
+
+        ideal_counts = ideal_sim.run(
+            qc_ideal,
+            shots=shots,
+            seed_simulator=seed
+        ).result().get_counts()
+
+        noisy_counts = noisy_sim.run(
+            qc_noisy,
+            shots=shots,
+            seed_simulator=seed
+        ).result().get_counts()
+
+        ideal_overlap = estimate_overlap_from_counts(ideal_counts, shots)
+        noisy_overlap = estimate_overlap_from_counts(noisy_counts, shots)
+
+        rows.append([depth, ideal_overlap, noisy_overlap])
+
+        print(
+            f"depth={depth}  "
+            f"ideal={ideal_overlap:.4f}  "
+            f"noisy={noisy_overlap:.4f}"
+        )
 
     # TODO:
     # Write rows to results/week2/noise_overlap_vs_depth.csv.
     # Plot the curves and save results/week2/noise_overlap_vs_depth.png.
-    with open(os.path.join(output_dir, 'noise_overlap_vs_depth.txt'), "wb") as file:
-        file.writelines(rows)
-    
-    for row in rows:
-        print(row)
+    with open(output_dir / "noise_overlap_vs_depth.csv", "w", newline="") as f:
+        writer = csv.writer(f)
+        writer.writerow(["depth", "ideal_overlap", "noisy_overlap"])
+        writer.writerows(rows)
+        
+        for row in rows:
+            print(row)
 
+    depth_vals = [r[0] for r in rows]
+    ideal_vals = [r[1] for r in rows]
+    noisy_vals = [r[2] for r in rows]
+
+    plt.figure(figsize=(6,4))
+    plt.plot(depth_vals, ideal_vals, "o-", label="Ideal")
+    plt.plot(depth_vals, noisy_vals, "o-", label="Noisy")
+    plt.xlabel("Depth layers")
+    plt.ylabel(r"Estimated $|\langle x|y\rangle|^2$")
+    plt.legend()
+    plt.grid(True)
+
+    plt.savefig(output_dir / "noise_overlap_vs_depth.png")
+    plt.close()
 
 def main():
     run_study()
