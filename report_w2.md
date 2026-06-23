@@ -1,4 +1,6 @@
 # Week 2: Quantum Similarity & Noise Sensitivity
+Week 2 focuses on vector similarity via quantum overlaps and on how noise and circuit depth affect
+results
 ## Task 1 : Inner Products & Classical Comparison
 Estimate the squared overlap |⟨x|y⟩|2
 for several vector pairs using a swap test, and compare to
@@ -29,8 +31,9 @@ Both classifiers compare on different notions of similarity. Cosine Similarity c
 and looses sign information. The classifiers agree in most cases, except if (i) x is equally similar to both classes or (ii) The direction of x is opposite to a class vector.
 In case (i), cosine similarity assigns no class label, whereas the quantum classifier assigns equal similarity to both and the noise steers the result more towards one class.
 In case (ii), cosine similarity would be -1 and squared overlap would be 1 due to the loss of sign information.
-## Task3: The Swap Test
+## Task 3: The Swap Test
 Show how overlap estimation degrades with increasing circuit depth under a depolarizing noise
 model
 ### Results
 <img src="noise_overlap_vs_depth.png" alt="noise overlap depth" width="400">
+With more layers, noise accumulates and the overlap estimation decreases.
