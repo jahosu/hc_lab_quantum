@@ -35,5 +35,6 @@ In case (ii), cosine similarity would be -1 and squared overlap would be 1 due t
 Show how overlap estimation degrades with increasing circuit depth under a depolarizing noise
 model
 ### Results
+We repeated the swap test with different circuit depths by constructing identity layers with double H gates and connecting them in series. The study shows that with more layers, noise accumulates and the overlap estimation decreases, deviating more and more from the true value.
 <img src="noise_overlap_vs_depth.png" alt="noise overlap depth" width="400">
-With more layers, noise accumulates and the overlap estimation decreases.
+
