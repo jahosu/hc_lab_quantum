@@ -8,7 +8,7 @@ Week 2 – Task 2 : Tiny Quantum Classifier
 
 from pathlib import Path
 from week2_inner_products import estimate_overlap_squared, classical_cosine_similarity
-
+import os 
  
 def classify_quantum(x, c0, c1, shots: int = 4000):
     """
@@ -21,7 +21,15 @@ def classify_quantum(x, c0, c1, shots: int = 4000):
     TODO:
     - Estimate both overlaps via estimate_overlap_squared, choose the higher value (or None on ties), and return the scores.
     """
-    pass
+    overlap_sq_c0 = estimate_overlap_squared(x, c0, shots)
+    overlap_sq_c1 = estimate_overlap_squared(x, c1, shots)
+    if (overlap_sq_c0 > overlap_sq_c1):
+        predicted_label = "0"
+    elif (overlap_sq_c0 == overlap_sq_c1):
+        predicted_label = "None"
+    else:
+        predicted_label = "1"
+    return predicted_label, overlap_sq_c0, overlap_sq_c1
 
 
 def classify_classical(x, c0, c1):
@@ -34,11 +42,21 @@ def classify_classical(x, c0, c1):
     TODO:
     - Evaluate classical_cosine_similarity for both prototypes, compare, and package the result.
     """
-    pass
+    cos_c0 = classical_cosine_similarity(x, c0)
+    cos_c1 = classical_cosine_similarity(x, c1)
+    if (cos_c0 > cos_c1):
+        predicted_label = "0"
+    elif (cos_c0 == cos_c1):
+        predicted_label = "None"
+    else:
+        predicted_label = "1"
+    
+    return predicted_label, cos_c0, cos_c1
 
 
 def main():
-    Path("results/week2").mkdir(parents=True, exist_ok=True)
+    output_dir = Path("results/week2")
+    output_dir.mkdir(parents=True, exist_ok=True)
 
     # You can change these prototypes if you like.
     c0 = (1.0, 0.0)
@@ -64,11 +82,17 @@ def main():
     for x in test_vectors:
         # TODO:
         # Invoke both classifiers, note whether they agree, and append a formatted summary line.
-        pass
+        overlap_sq_label = classify_quantum(x, c0, c1, shots)
+        cos_label = classify_classical(x, c0, c1)
+        lines.append(f"Agreement: {"Agree" if overlap_sq_label[0] == cos_label[0] else "Not Agree"}, Overlap squared label: {overlap_sq_label}, Cosine label: {cos_label}")
 
     # TODO:
     # Persist the collected lines to results/week2/task2_classifier.txt and also print them.
-    pass
+    with open(os.path.join(output_dir, 'task2_classifier.txt'), "w") as file:
+        file.writelines(lines)
+    
+    for line in lines:
+        print(line)
 
 
 if __name__ == "__main__":

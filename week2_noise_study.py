@@ -34,7 +34,7 @@ from qiskit_aer.noise import NoiseModel, depolarizing_error
 from pathlib import Path
 import csv
 import matplotlib.pyplot as plt
-
+import os
 # Reuse your encoding from Task 1:
 from week2_inner_products import prepare_vector_state
 
@@ -65,7 +65,20 @@ def build_noise_model(p1: float = 0.01, p2: float = 0.02, p3: float = 0.03) -> N
     TODO:
     - Create depolarizing errors for 1q/2q/3q gates, register them for the relevant operations, and return the model.
     """
-    pass
+
+
+    # Depolarizing quantum errors
+    error_1 = depolarizing_error(p1, 1)
+    error_2 = depolarizing_error(p2, 1)
+    error_3 = depolarizing_error(p3, 1)
+
+    # Add errors to noise model
+    noise_model = NoiseModel()
+    noise_model.add_all_qubit_quantum_error(error_1, ['u1'])
+    noise_model.add_all_qubit_quantum_error(error_2, ['u2'])
+    noise_model.add_all_qubit_quantum_error(error_3, ['u3'])
+    
+    return noise_model
 
 
 def _add_identity_layer(qc: QuantumCircuit, qubits: list[int]):
@@ -93,6 +106,16 @@ def build_overlap_circuit_with_depth(vx, vy, depth_layers: int) -> QuantumCircui
     anc, qx, qy = 0, 1, 2
 
     # TODO: fill in the described structure.
+    prepare_vector_state(qc, qx, vx)
+    prepare_vector_state(qc, qy, vy)
+    
+    qc.h(anc)
+    qc.cswap(anc, qx, qy)
+    qc.h(anc)
+    
+    qubits = [] if depth_layers == 0 else range(3, depth_layers+3) 
+    _add_identity_layer(qc, qubits)
+    qc.measure_all()
     return qc
 
 
@@ -104,7 +127,8 @@ def estimate_overlap_from_counts(counts: dict, shots: int) -> float:
 
 
 def run_study():
-    Path("results/week2").mkdir(parents=True, exist_ok=True)
+    output_dir = Path("results/week2")
+    output_dir.mkdir(parents=True, exist_ok=True)
 
     vx = (1.0, 0.0)
     vy = (1.0, 1.0)
@@ -116,16 +140,28 @@ def run_study():
     # TODO:
     # Build the noise model plus the ideal and noisy backends.
     rows = []
-
+    noise_model = build_noise_model()
+    sim = get_backend(noise_model)
+    
     # TODO:
     # Loop over depths, generate the circuit, run both simulations with optimization_level=0,
     # store the overlap estimates, and print progress.
-    pass
+    for depth in depths:
+        qc = build_overlap_circuit_with_depth(vx, vy, depth)
+        qc_t = transpile(qc, sim, optimization_level=0, seed_transpiler=seed)
+        result = sim.run(qc_t, shots=shots, seed_simulator=seed).result()
+        counts = result.get_counts()
+        estimated_overlap_sq = estimate_overlap_from_counts(counts, shots)
+        rows.append(estimated_overlap_sq)
 
     # TODO:
     # Write rows to results/week2/noise_overlap_vs_depth.csv.
     # Plot the curves and save results/week2/noise_overlap_vs_depth.png.
-    pass
+    with open(os.path.join(output_dir, 'noise_overlap_vs_depth.txt'), "wb") as file:
+        file.writelines(rows)
+    
+    for row in rows:
+        print(row)
 
 
 def main():

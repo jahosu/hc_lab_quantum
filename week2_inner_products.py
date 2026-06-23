@@ -20,6 +20,7 @@ from qiskit import QuantumCircuit, transpile
 from qiskit_aer import AerSimulator, AerError
 import math
 from pathlib import Path
+import os
 
 DEFAULT_SEED = 123
 
@@ -45,7 +46,11 @@ def prepare_vector_state(qc: QuantumCircuit, qubit: int, v):
     TODO:
     - Implement the encoding on the provided circuit.
     """
-    pass
+    nomalized_v = normalize_2d(v)
+    nomalized_v = [-1 * nomalized_v[0], -1 * nomalized_v[1]] if nomalized_v[0] < 0 else nomalized_v
+    thetta = 2 * math.acos(nomalized_v[0])
+
+    qc.ry(thetta, qubit)
 
 
 def build_swap_test_circuit(vx, vy):
@@ -63,6 +68,13 @@ def build_swap_test_circuit(vx, vy):
     anc, qx, qy = 0, 1, 2
 
     # TODO: insert the swap-test routine.
+    prepare_vector_state(qc, qx, vx)
+    prepare_vector_state(qc, qy, vy)
+    
+    qc.h(anc)
+    qc.cswap(anc, qx, qy)
+    qc.h(anc)
+    qc.measure(anc, 0)
     return qc
 
 
@@ -86,9 +98,11 @@ def estimate_overlap_squared(
     qc = build_swap_test_circuit(vx, vy)
 
     qc_t = transpile(qc, sim, optimization_level=0, seed_transpiler=seed_transpiler)
-
     # TODO: perform the simulation, process counts, and return the result.
-    pass
+    result = sim.run(qc_t, shots=shots, seed_simulator=seed_simulator).result()
+    counts = result.get_counts()
+    p_zero = counts['0'] / shots
+    return max(min(2 * p_zero - 1, 1), 0)
 
 
 def classical_cosine_similarity(vx, vy):
@@ -99,7 +113,13 @@ def classical_cosine_similarity(vx, vy):
     TODO:
     - Implement the basic dot-product formula with normalization and proper error handling.
     """
-    pass
+    sumxx, sumxy, sumyy = 0, 0, 0
+    for i in range(len(vx)):
+        x = vx[i]; y = vy[i]
+        sumxx += x*x
+        sumyy += y*y
+        sumxy += x*y
+    return sumxy/math.sqrt(sumxx*sumyy)
 
 
 def classical_distance(vx, vy):
@@ -110,11 +130,12 @@ def classical_distance(vx, vy):
     TODO:
     - Compute the standard L2 distance for two 2D vectors.
     """
-    pass
+    return math.dist(vx, vy)
 
 
 def main():
-    Path("results/week2").mkdir(parents=True, exist_ok=True)
+    output_dir = Path("results/week2")
+    output_dir.mkdir(parents=True, exist_ok=True)
 
     shots = 4000
     seed = DEFAULT_SEED
@@ -131,10 +152,18 @@ def main():
     for vx, vy in pairs:
         # TODO:
         # Use the helper functions to gather quantum and classical metrics, then log the comparison.
-        pass
+        overlap_squard = estimate_overlap_squared(vx, vy, shots, seed, seed)
+        cosine_sim = classical_cosine_similarity(vx, vy)
+        euclidean_dist = classical_distance(vx, vy)
+
+        lines.append(f'Squared Overlap: {overlap_squard}, Cosine Similarity: {cosine_sim}, Euclidean distance: {euclidean_dist} \n')
 
     # TODO: dump the collected summary into results/week2/task1_summary.txt and print it.
-    pass
+    with open(os.path.join(output_dir, 'ask1_summary.txt'), "w") as file:
+        file.writelines(lines)
+    
+    for line in lines:
+        print(line)
 
 
 if __name__ == "__main__":
