@@ -1,0 +1,4 @@
+=== Inner products and distances (quantum vs classical) ===
+Squared Overlap: 1.0, Cosine Similarity: 1.0, Euclidean distance: 0.0 
+Squared Overlap: 0.011500000000000066, Cosine Similarity: 0.0, Euclidean distance: 1.4142135623730951 
+Squared Overlap: 1.0, Cosine Similarity: -1.0, Euclidean distance: 2.0 
