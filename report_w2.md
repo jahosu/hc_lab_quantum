@@ -1,6 +1,6 @@
 # Week 2: Quantum Similarity & Noise Sensitivity
-Week 2 focuses on vector similarity via quantum overlaps and on how noise and circuit depth affect
-results
+The second week's assignment focuses on vector similarity via quantum overlaps and on how noise and circuit depth affect
+results.
 ## Task 1 : Inner Products & Classical Comparison
 Estimate the squared overlap |⟨x|y⟩|2
 for several vector pairs using a swap test, and compare to
