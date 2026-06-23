@@ -32,4 +32,5 @@ In case (ii), cosine similarity would be -1 and squared overlap would be 1 due t
 ## Task3: The Swap Test
 Show how overlap estimation degrades with increasing circuit depth under a depolarizing noise
 model
-### TODO: Plot noise overlap vs. depth
+### Results
+<img src="noise_overlap_vs_depth.png" alt="noise overlap depth" width="400">
