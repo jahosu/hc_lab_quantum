@@ -15,7 +15,7 @@ from .experiments import (
     ensure_results_dir as ensure_exp_dir,
     run_similarity_search,
 )
-from .analysis import (
+from ..analysis import (
     ensure_results_dir as ensure_ana_dir,
     save_csv,
     plot_similarity_ranking,

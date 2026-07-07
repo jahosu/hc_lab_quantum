@@ -10,7 +10,7 @@ import math
 import random
 
 try:
-    from experiments import estimate_overlap_squared
+    from projects.experiments import estimate_overlap_squared
 except Exception:  # pragma: no cover - only used if package imports are incomplete
     estimate_overlap_squared = None
 
@@ -78,6 +78,11 @@ def quantum_overlap_squared(
     )
 
 
+def initialize_centroids(data, k, seed=123):
+    random.seed(seed)
+    return random.sample(list(data), k)
+
+
 def initialize_centroids(data: Sequence[Item], k: int, seed: int = 123) -> List[Item]:
     """
     Pick k initial centroids.
@@ -114,19 +119,46 @@ def assign_points_quantum(
     - choose the centroid with the largest overlap_sq
     - store enough information for CSV analysis
     """
-
+    if overlap_fn is None:
+        overlap_fn = quantum_overlap_squared
     
     score_rows = []
     assignment_rows = []
+    assignments = []
     for point in data:
-        point_centroid_distanceq = []
-        for centroid in centroids:
-            s = estimate_overlap_squared(_as_vector(point), _as_vector(centroid), shots, None, seed_simulator, seed_transpiler)
-            score_rows.append({"point_label": point["label"], "centroid_label": centroid["label"], "overlap_sq": s, "distance_q": 1-s})
-            point_centroid_distanceq.append([point["label"], centroid["label"], 1-s])
-        point_centroid_distanceq.sort(key=lambda x: x[2])
-        assignment_rows.append({"point_label": point["label"], "centroid_label": centroid["label"]})
-    assignments = list(map(lambda x: x["centroid_label"], assignment_rows))
+        best_cluster = None
+        best_distance = float("inf")
+
+        for cluster_id, centroid in enumerate(centroids):
+
+            overlap_sq, counts = overlap_fn(
+                _as_vector(point),
+                _as_vector(centroid),
+                shots,
+                seed_simulator,
+                seed_transpiler,
+            )
+
+            distance_q = 1 - overlap_sq
+
+            score_rows.append({
+                "point_label": point["label"],
+                "cluster_id": cluster_id,
+                "overlap_sq": overlap_sq,
+                "distance_q": distance_q,
+            })
+
+            if distance_q < best_distance:
+                best_distance = distance_q
+                best_cluster = cluster_id
+
+        assignments.append(best_cluster)
+
+        assignment_rows.append({
+            "point_label": point["label"],
+            "cluster_id": best_cluster,
+        })
+
     return assignments, assignment_rows, score_rows
 
 
@@ -144,7 +176,36 @@ def update_centroids_classical(
     - compute the mean vector for each non-empty cluster
     - decide how to handle empty clusters, 
     """
-    raise NotImplementedError("TODO: implement update_centroids_classical(...)")
+    clusters = [[] for _ in range(k)]
+
+    for point, cluster_id in zip(data, assignments):
+        clusters[cluster_id].append(_as_vector(point))
+
+    new_centroids = []
+
+    for cluster_id in range(k):
+
+        if len(clusters[cluster_id]) == 0:
+
+            # keep previous centroid
+            new_centroids.append(old_centroids[cluster_id])
+
+            continue
+
+        xs = [v[0] for v in clusters[cluster_id]]
+        ys = [v[1] for v in clusters[cluster_id]]
+
+        mean = (
+            sum(xs) / len(xs),
+            sum(ys) / len(ys),
+        )
+
+        new_centroids.append({
+            "label": f"C{cluster_id}",
+            "vector": mean,
+        })
+
+    return new_centroids
 
 
 def run_quantum_kmeans(
@@ -165,4 +226,38 @@ def run_quantum_kmeans(
     - stop when assignments do not change
     - return a dict with final centroids, assignments, and CSV rows
     """
-    raise NotImplementedError("TODO: implement run_quantum_kmeans(...)")
+    if initial_centroids is None:
+        centroids = initialize_centroids(data, k, seed=seed)
+    else:
+        centroids = list(initial_centroids)
+
+    previous_assignments = None
+
+    all_scores = []
+    all_assignments = []
+
+    for iteration in range(max_iter):
+
+        assignments, assignment_rows, score_rows = assign_points_quantum(data, centroids, shots=shots, seed_simulator=seed, seed_transpiler=seed, overlap_fn=overlap_fn, iteration=iteration)
+
+        all_scores.extend(score_rows)
+        all_assignments.extend(assignment_rows)
+
+        if assignments == previous_assignments:
+            break
+
+        previous_assignments = assignments
+
+        centroids = update_centroids_classical(
+            data,
+            assignments,
+            k,
+            centroids,
+        )
+    
+    return {
+        "centroids": centroids,
+        "assignments": assignments,
+        "score_rows": all_scores,
+        "assignment_rows": all_assignments,
+    }
