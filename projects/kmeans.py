@@ -78,7 +78,7 @@ def quantum_overlap_squared(
     )
 
 
-def initialize_centroids(data, k, seed=123):
+def initialize_centroids(data, k, seed=42):
     random.seed(seed)
     return random.sample(list(data), k)
 
@@ -143,7 +143,7 @@ def assign_points_quantum(
 
             score_rows.append({
                 "point_label": point["label"],
-                "cluster_id": cluster_id,
+                "cluster": cluster_id,
                 "overlap_sq": overlap_sq,
                 "distance_q": distance_q,
             })
@@ -156,7 +156,7 @@ def assign_points_quantum(
 
         assignment_rows.append({
             "point_label": point["label"],
-            "cluster_id": best_cluster,
+            "assigned_cluster": best_cluster,
         })
 
     return assignments, assignment_rows, score_rows
@@ -235,6 +235,9 @@ def run_quantum_kmeans(
 
     all_scores = []
     all_assignments = []
+    centroid_rows = []
+    convergence_rows = []
+    # TODO: add convergence rows with iteration, num_changed and stable
 
     for iteration in range(max_iter):
 
@@ -243,8 +246,11 @@ def run_quantum_kmeans(
         all_scores.extend(score_rows)
         all_assignments.extend(assignment_rows)
 
-        if assignments == previous_assignments:
-            break
+        print(f"assignments: {assignments}, previous: {previous_assignments}")
+        stable = assignments == previous_assignments
+        num_changed = sum([x != y for x, y in zip(assignments, previous_assignments)]) if previous_assignments is not None else len(assignments)
+        convergence_rows.append({"iteration": iteration, "num_changed": num_changed, "stable": stable})
+
 
         previous_assignments = assignments
 
@@ -254,10 +260,15 @@ def run_quantum_kmeans(
             k,
             centroids,
         )
+
+        for j in range(len(centroids)):
+            centroid_rows.append({"iteration": iteration, "cluster": assignments[j], "centroid_label": centroids[j]["label"], "c0": centroids[j]["vector"][0], "c1": centroids[j]["vector"][1]})
     
     return {
+        "centroid_rows": centroid_rows,
         "centroids": centroids,
         "assignments": assignments,
         "score_rows": all_scores,
         "assignment_rows": all_assignments,
+        "convergence_rows": convergence_rows
     }

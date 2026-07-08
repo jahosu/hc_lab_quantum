@@ -1,6 +1,6 @@
-iteration,num_changed,stable,cluster_id,point_label
-0,0,,,
-1,0,,,
-2,0,,,
-3,0,,,
-4,0,,,
+iteration,num_changed,stable
+0,6,False
+1,3,False
+2,0,True
+3,0,True
+4,0,True
